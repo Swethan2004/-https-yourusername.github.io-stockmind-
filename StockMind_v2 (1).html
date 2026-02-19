@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StockMind AI — Beginner-Friendly Stock Analyser</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@300;400;500;600&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   DESIGN SYSTEM
+   ============================================================ */
+:root {
+  --bg:       #07090f;
+  --bg2:      #0b0f18;
+  --surface:  #101520;
+  --surface2: #151d2a;
+  --border:   rgba(0,200,255,0.07);
+  --border2:  rgba(0,200,255,0.18);
+  --cyan:     #00d4ff;
+  --green:    #00e676;
+  --red:      #ff4757;
+  --orange:   #ffa502;
+  --yellow:   #ffd32a;
+  --purple:   #a855f7;
+  --text:     #e8edf5;
+  --muted:    #4a6070;
+  --muted2:   #7a9aaa;
+  --font-d:   'Syne', sans-serif;
+  --font-m:   'IBM Plex Mono', monospace;
+  --font-b:   'DM Sans', sans-serif;
+  --r:        14px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{background:var(--bg);color:var(--text);font-family:var(--font-b);height:100%;overflow:hidden;}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.025) 2px,rgba(0,0,0,0.025) 4px);pointer-events:none;z-index:9999;}
+button{cursor:pointer;font-family:inherit;}
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+.app{display:flex;flex-direction:column;height:100vh;}
+
+/* HEADER */
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:11px 22px;background:var(--surface);border-bottom:1px solid var(--border2);flex-shrink:0;position:relative;overflow:hidden;}
+.hdr::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);}
+.logo{display:flex;align-items:center;gap:10px;}
+.logo-ico{width:32px;height:32px;background:linear-gradient(135deg,var(--cyan),#0055ff);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;}
+.logo-name{font-family:var(--font-d);font-size:19px;font-weight:800;}
+.logo-name span{color:var(--cyan);}
+.logo-tag{font-size:9px;color:var(--muted);font-family:var(--font-m);letter-spacing:2px;text-transform:uppercase;}
+.hdr-r{display:flex;align-items:center;gap:10px;}
+.badge{font-family:var(--font-m);font-size:10px;font-weight:600;padding:4px 10px;border-radius:20px;letter-spacing:1px;cursor:pointer;border:1px solid;}
+.badge-demo{background:rgba(255,165,2,.1);color:var(--orange);border-color:rgba(255,165,2,.3);}
+.badge-live{background:rgba(0,230,118,.1);color:var(--green);border-color:rgba(0,230,118,.3);}
+.hdr-btn{font-family:var(--font-m);font-size:10px;padding:5px 12px;border-radius:6px;background:var(--surface2);color:var(--cyan);border:1px solid var(--border2);transition:all .2s;}
+.hdr-btn:hover{background:rgba(0,212,255,.1);}
+.spin-btn{background:none;border:none;color:var(--cyan);font-size:16px;padding:4px;transition:transform .5s;}
+.spin-btn.go{animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* BODY */
+.main{display:flex;flex:1;overflow:hidden;}
+
+/* SIDEBAR */
+.sb{width:210px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;}
+.sb-sec{padding:14px 10px 6px;}
+.sb-lbl{font-family:var(--font-m);font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;padding:0 8px 8px;}
+.nav-i{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:all .15s;margin-bottom:2px;font-size:13px;font-weight:500;color:var(--muted2);border:1px solid transparent;}
+.nav-i:hover{background:var(--surface2);color:var(--text);}
+.nav-i.on{background:rgba(0,212,255,.1);color:var(--cyan);border-color:rgba(0,212,255,.15);}
+.nav-i .ic{font-size:14px;width:18px;text-align:center;}
+.sb-stocks{padding:0 10px 14px;flex:1;}
+.sk-i{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border-radius:8px;cursor:pointer;margin-bottom:2px;transition:all .15s;border:1px solid transparent;}
+.sk-i:hover{background:var(--surface2);}
+.sk-i.on{background:rgba(0,212,255,.07);border-color:rgba(0,212,255,.2);}
+.sk-t{font-family:var(--font-m);font-size:12px;font-weight:600;}
+.sk-p{font-family:var(--font-m);font-size:11px;font-weight:500;}
+.pos{color:var(--green);} .neg{color:var(--red);}
+
+/* CONTENT */
+.content{flex:1;overflow-y:auto;background:var(--bg2);}
+.panel{display:none;padding:20px;}
+.panel.on{display:block;}
+
+/* ============================================================
+   CARDS
+   ============================================================ */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:16px;position:relative;overflow:hidden;}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,212,255,.18),transparent);}
+.ch{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.ct{display:flex;align-items:center;gap:8px;font-family:var(--font-m);font-size:11px;font-weight:600;color:var(--cyan);letter-spacing:1px;text-transform:uppercase;}
+.ct .dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+.sec-title{font-family:var(--font-d);font-size:21px;font-weight:800;margin-bottom:5px;}
+.sec-sub{font-size:12px;color:var(--muted);margin-bottom:18px;font-family:var(--font-m);}
+
+/* ============================================================
+   NEWS TICKER
+   ============================================================ */
+.ticker-wrap{overflow:hidden;background:rgba(0,212,255,.03);border:1px solid var(--border);border-radius:8px;padding:8px 0;margin-bottom:18px;}
+.ticker-inner{display:flex;white-space:nowrap;animation:tick 45s linear infinite;}
+@keyframes tick{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.tk-i{font-family:var(--font-m);font-size:11px;color:var(--muted2);padding:0 22px;border-right:1px solid var(--border);}
+.tk-i .tkt{color:var(--cyan);font-weight:600;}
+
+/* ============================================================
+   THEME CARDS
+   ============================================================ */
+.theme-c{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:15px;margin-bottom:11px;cursor:pointer;transition:all .2s;}
+.theme-c:hover{border-color:var(--border2);transform:translateY(-1px);}
+.theme-c.exp{border-color:rgba(0,212,255,.25);}
+.theme-c.exp .chev{transform:rotate(180deg);}
+.theme-c.exp .tbody{display:block;}
+.ttop{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
+.tmeta{display:flex;align-items:center;gap:7px;margin-bottom:7px;flex-wrap:wrap;}
+.ibadge{font-family:var(--font-m);font-size:9px;font-weight:700;padding:3px 8px;border-radius:20px;letter-spacing:1px;border:1px solid;}
+.ih{background:rgba(255,71,87,.1);color:var(--red);border-color:rgba(255,71,87,.25);}
+.im{background:rgba(255,165,2,.1);color:var(--orange);border-color:rgba(255,165,2,.25);}
+.il{background:rgba(0,230,118,.1);color:var(--green);border-color:rgba(0,230,118,.25);}
+.ttag{font-family:var(--font-m);font-size:10px;color:rgba(0,212,255,.7);font-weight:600;}
+.tname{font-family:var(--font-d);font-size:15px;font-weight:700;color:var(--text);margin-bottom:5px;}
+.tsum{font-size:12px;color:var(--muted2);line-height:1.6;}
+.sent-row{display:flex;align-items:center;gap:6px;margin-top:9px;}
+.sent-bull{color:var(--green);} .sent-bear{color:var(--red);} .sent-neu{color:var(--muted2);}
+.sent-lbl{font-family:var(--font-m);font-size:11px;font-weight:600;}
+.tbody{display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+.hl-lbl{font-family:var(--font-m);font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;}
+.hl-i{display:flex;gap:8px;align-items:flex-start;margin-bottom:6px;font-size:12px;color:rgba(232,237,245,.7);}
+.hldot{width:4px;height:4px;border-radius:50%;margin-top:6px;flex-shrink:0;}
+.chev{font-size:11px;color:var(--muted);transition:transform .2s;flex-shrink:0;margin-top:3px;}
+
+/* ============================================================
+   WATCHLIST
+   ============================================================ */
+.rank-c{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px;margin-bottom:9px;display:flex;align-items:center;gap:13px;cursor:pointer;transition:all .15s;}
+.rank-c:hover{border-color:var(--border2);background:var(--surface2);}
+.rnum{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-m);font-size:13px;font-weight:700;flex-shrink:0;border:1px solid;}
+.r1{background:rgba(255,211,42,.1);color:var(--yellow);border-color:rgba(255,211,42,.3);}
+.r2{background:rgba(200,200,200,.1);color:#c8c8c8;border-color:rgba(200,200,200,.25);}
+.r3{background:rgba(255,165,2,.1);color:var(--orange);border-color:rgba(255,165,2,.25);}
+.rx{background:rgba(90,112,128,.1);color:var(--muted2);border-color:rgba(90,112,128,.2);}
+.rb{flex:1;min-width:0;}
+.rtop{display:flex;align-items:center;gap:9px;margin-bottom:4px;}
+.rticker{font-family:var(--font-m);font-size:15px;font-weight:700;}
+.rreason{font-size:11px;color:var(--muted2);line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rm{display:flex;gap:14px;flex-shrink:0;}
+.met{text-align:center;}
+.mv{font-family:var(--font-m);font-size:13px;font-weight:700;}
+.ml{font-size:9px;color:var(--muted);font-family:var(--font-m);letter-spacing:1px;text-transform:uppercase;}
+.mbadge{font-family:var(--font-m);font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;}
+.mu{background:rgba(0,230,118,.1);color:var(--green);}
+.md{background:rgba(255,71,87,.1);color:var(--red);}
+.mv2{background:rgba(255,165,2,.1);color:var(--orange);}
+.ms{background:rgba(90,112,128,.1);color:var(--muted2);}
+
+/* ============================================================
+   DECISION VIEW
+   ============================================================ */
+.sth-card{background:linear-gradient(135deg,var(--surface) 0%,rgba(0,212,255,.04) 100%);border:1px solid rgba(0,212,255,.2);border-radius:var(--r);padding:18px;margin-bottom:15px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
+.sth-l .ticker{font-family:var(--font-d);font-size:32px;font-weight:800;}
+.sth-l .co-name{font-size:12px;color:var(--muted);margin-top:2px;}
+.sth-l .co-tags{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;}
+.co-tag{font-family:var(--font-m);font-size:9px;padding:3px 8px;border-radius:20px;font-weight:700;background:rgba(0,212,255,.08);color:var(--cyan);border:1px solid rgba(0,212,255,.2);}
+.sth-r{text-align:right;}
+.sth-price{font-family:var(--font-m);font-size:26px;font-weight:700;}
+.sth-chg{font-family:var(--font-m);font-size:13px;font-weight:600;}
+.sth-meta{font-family:var(--font-m);font-size:10px;color:var(--muted);margin-top:4px;}
+
+/* Company About Box */
+.about-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:15px;}
+.about-title{font-family:var(--font-m);font-size:10px;color:var(--cyan);text-transform:uppercase;letter-spacing:2px;font-weight:700;margin-bottom:10px;}
+.about-desc{font-size:12px;color:var(--muted2);line-height:1.8;margin-bottom:12px;}
+.invest-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;}
+.inv-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px;text-align:center;}
+.inv-icon{font-size:18px;margin-bottom:4px;}
+.inv-label{font-size:10px;color:var(--muted2);font-weight:500;}
+.inv-pct{font-family:var(--font-m);font-size:11px;color:var(--cyan);font-weight:700;margin-top:2px;}
+
+/* Decision Bars */
+.dbar-row{display:flex;align-items:center;gap:11px;margin-bottom:9px;}
+.dbar-lbl{font-family:var(--font-m);font-size:12px;font-weight:700;width:36px;}
+.dbar-track{flex:1;background:rgba(255,255,255,.04);border-radius:4px;height:22px;overflow:hidden;}
+.dbar-fill{height:100%;border-radius:4px;transition:width 1.1s cubic-bezier(.34,1.56,.64,1);display:flex;align-items:center;padding-left:8px;}
+.dbar-ft{font-family:var(--font-m);font-size:11px;font-weight:700;color:rgba(0,0,0,.8);}
+.dbar-pct{font-family:var(--font-m);font-size:14px;font-weight:700;width:42px;text-align:right;}
+.dbuy{background:rgba(0,230,118,.7);} .dhold{background:rgba(255,165,2,.7);} .dsell{background:rgba(255,71,87,.7);}
+.dbuy-t{color:var(--green);} .dhold-t{color:var(--orange);} .dsell-t{color:var(--red);}
+
+/* Risk Gauge */
+.gauge-track{background:rgba(255,255,255,.06);border-radius:4px;height:10px;overflow:hidden;}
+.gauge-fill{height:100%;border-radius:4px;transition:width 1s cubic-bezier(.34,1.56,.64,1);background:linear-gradient(90deg,#00e676,#ffd32a,#ffa502,#ff4757);}
+.gauge-lbls{display:flex;justify-content:space-between;margin-top:4px;font-family:var(--font-m);font-size:9px;color:var(--muted);}
+
+/* AI Comparison */
+.cmp-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.cmp-col{background:var(--bg2);border-radius:10px;padding:13px;border:1px solid var(--border);text-align:center;}
+.cmp-title{font-family:var(--font-m);font-size:11px;font-weight:700;margin-bottom:11px;}
+.cmr{display:flex;align-items:center;gap:6px;margin-bottom:5px;}
+.cml{font-family:var(--font-m);font-size:10px;font-weight:700;width:16px;}
+.cmt{flex:1;background:rgba(255,255,255,.05);border-radius:3px;height:8px;overflow:hidden;}
+.cmf{height:100%;border-radius:3px;transition:width .9s ease;}
+.cmpct{font-family:var(--font-m);font-size:10px;width:28px;text-align:right;}
+
+/* Beginner AI Section */
+.bsec{background:linear-gradient(135deg,rgba(0,212,255,.05),rgba(168,85,247,.05));border:1px solid rgba(168,85,247,.2);border-radius:var(--r);padding:16px;margin-bottom:15px;}
+.bsec-title{font-family:var(--font-m);font-size:11px;font-weight:700;color:var(--purple);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;}
+.bsec-summary{font-size:13px;color:var(--text);line-height:1.8;margin-bottom:14px;}
+.signals-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.sig-box{border-radius:10px;padding:11px;}
+.sig-box.up{background:rgba(0,230,118,.06);border:1px solid rgba(0,230,118,.2);}
+.sig-box.down{background:rgba(255,71,87,.06);border:1px solid rgba(255,71,87,.2);}
+.sig-title{font-family:var(--font-m);font-size:10px;font-weight:700;margin-bottom:8px;}
+.sig-title.up{color:var(--green);} .sig-title.down{color:var(--red);}
+.sig-item{display:flex;gap:7px;align-items:flex-start;margin-bottom:6px;font-size:12px;color:var(--muted2);}
+.sig-dot{width:4px;height:4px;border-radius:50%;margin-top:6px;flex-shrink:0;}
+.market-story{background:var(--surface);border-radius:10px;padding:12px;font-size:12px;color:var(--muted2);line-height:1.7;font-style:italic;border-left:3px solid var(--cyan);}
+.market-story strong{color:var(--text);font-style:normal;}
+
+/* News Explained */
+.news-exp{background:rgba(0,212,255,.04);border:1px solid rgba(0,212,255,.15);border-radius:10px;padding:12px;margin-top:12px;}
+.news-exp-lbl{font-family:var(--font-m);font-size:9px;color:var(--cyan);letter-spacing:2px;text-transform:uppercase;margin-bottom:7px;}
+.news-exp-headline{font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px;}
+.news-exp-explain{font-size:12px;color:var(--muted2);line-height:1.6;}
+
+/* Beginner Tag */
+.btag{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-m);font-size:10px;font-weight:700;padding:4px 12px;border-radius:20px;letter-spacing:1px;}
+.btag-bf{background:rgba(0,230,118,.1);color:var(--green);border:1px solid rgba(0,230,118,.3);}
+.btag-mod{background:rgba(255,165,2,.1);color:var(--orange);border:1px solid rgba(255,165,2,.3);}
+.btag-hi{background:rgba(255,71,87,.1);color:var(--red);border:1px solid rgba(255,71,87,.3);}
+
+/* Insight items */
+.ins-i{display:flex;gap:11px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--border);}
+.ins-i:last-child{border-bottom:none;}
+.ins-num{font-family:var(--font-m);font-size:10px;color:var(--cyan);background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.2);border-radius:4px;padding:2px 6px;flex-shrink:0;margin-top:1px;}
+.ins-ag{font-family:var(--font-m);font-size:10px;color:var(--cyan);font-weight:600;margin-bottom:2px;}
+.ins-tx{font-size:12px;color:var(--muted2);line-height:1.5;}
+
+/* AI Tags */
+.ai-tag{font-family:var(--font-m);font-size:9px;padding:3px 7px;border-radius:20px;font-weight:700;border:1px solid;}
+.ai-claude{background:rgba(255,132,0,.1);color:#ff8400;border-color:rgba(255,132,0,.25);}
+.ai-gpt{background:rgba(0,230,118,.08);color:var(--green);border-color:rgba(0,230,118,.25);}
+.ai-con{background:rgba(0,212,255,.08);color:var(--cyan);border-color:var(--border2);}
+.conf-tag{font-family:var(--font-m);font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;border:1px solid;}
+.ch{background:rgba(0,230,118,.1);color:var(--green);border-color:rgba(0,230,118,.3);}
+.cm{background:rgba(255,165,2,.1);color:var(--orange);border-color:rgba(255,165,2,.3);}
+.cl{background:rgba(255,71,87,.1);color:var(--red);border-color:rgba(255,71,87,.3);}
+
+/* Decision grid */
+.dec-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px;}
+
+/* Empty state */
+.empty{text-align:center;padding:50px 20px;color:var(--muted);}
+.empty .eico{font-size:50px;margin-bottom:14px;opacity:.4;}
+.empty h3{font-family:var(--font-d);font-size:17px;color:var(--muted2);margin-bottom:7px;}
+.empty p{font-size:12px;line-height:1.7;max-width:300px;margin:0 auto 18px;}
+.qgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:360px;margin:0 auto;}
+.qbtn{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px;cursor:pointer;transition:all .15s;font-family:var(--font-m);font-size:12px;font-weight:600;color:var(--cyan);text-align:center;}
+.qbtn:hover{border-color:var(--border2);}
+.qbtn .qp{font-size:10px;color:var(--muted2);font-weight:400;margin-top:2px;}
+
+/* Settings */
+.set-sec{margin-bottom:22px;}
+.set-lbl{font-family:var(--font-m);font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:9px;}
+.ch-grp{display:grid;gap:7px;}
+.ch-i{display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px 13px;cursor:pointer;transition:all .15s;}
+.ch-i:hover{border-color:var(--border2);}
+.ch-i.sel{border-color:rgba(0,212,255,.4);background:rgba(0,212,255,.04);}
+.ch-name{font-size:13px;font-weight:600;}
+.ch-desc{font-size:11px;color:var(--muted);margin-top:2px;}
+.ch-ck{width:18px;height:18px;border-radius:50%;border:2px solid var(--muted);display:flex;align-items:center;justify-content:center;font-size:10px;transition:all .15s;flex-shrink:0;}
+.ch-i.sel .ch-ck{background:var(--cyan);border-color:var(--cyan);color:#000;}
+.api-box{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;}
+.api-f{margin-bottom:11px;}
+.api-f:last-of-type{margin-bottom:0;}
+.api-f label{display:block;font-family:var(--font-m);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;}
+.api-f input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 11px;color:var(--text);font-family:var(--font-m);font-size:12px;outline:none;transition:border-color .15s;}
+.api-f input:focus{border-color:var(--cyan);}
+.api-f input::placeholder{color:var(--muted);}
+.save-btn{background:linear-gradient(135deg,var(--cyan),#0055ff);color:#000;font-family:var(--font-d);font-size:13px;font-weight:700;padding:10px 22px;border:none;border-radius:8px;cursor:pointer;transition:opacity .2s;margin-top:13px;width:100%;}
+.save-btn:hover{opacity:.85;}
+.disc-box{background:rgba(255,165,2,.03);border:1px solid rgba(255,165,2,.15);border-radius:10px;padding:13px;font-size:11px;color:var(--muted2);line-height:1.7;}
+.disc-box strong{color:var(--orange);}
+.tgl-wrap{display:flex;align-items:center;justify-content:space-between;padding:11px 13px;background:var(--surface);border:1px solid var(--border);border-radius:10px;}
+.tgl{position:relative;display:inline-block;width:44px;height:24px;}
+.tgl input{display:none;}
+.tgl-sl{position:absolute;inset:0;border-radius:24px;background:rgba(90,112,128,.3);cursor:pointer;transition:.3s;}
+.tgl-sl:before{content:'';position:absolute;width:18px;height:18px;left:3px;bottom:3px;background:#555;border-radius:50%;transition:.3s;}
+input:checked+.tgl-sl{background:rgba(0,212,255,.4);}
+input:checked+.tgl-sl:before{transform:translateX(20px);background:var(--cyan);}
+
+/* Modal */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;display:none;align-items:center;justify-content:center;}
+.modal-ov.show{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:24px;width:400px;max-width:92vw;position:relative;}
+.modal h3{font-family:var(--font-d);font-size:17px;font-weight:800;margin-bottom:15px;}
+.m-close{position:absolute;top:15px;right:15px;background:none;border:none;color:var(--muted);font-size:17px;cursor:pointer;}
+.m-close:hover{color:var(--text);}
+
+/* Loading dots */
+.ld{display:flex;gap:6px;justify-content:center;padding:20px;}
+.ld span{width:8px;height:8px;border-radius:50%;background:var(--cyan);animation:lb 1.2s infinite;}
+.ld span:nth-child(2){animation-delay:.2s}.ld span:nth-child(3){animation-delay:.4s}
+@keyframes lb{0%,80%,100%{transform:scale(.6);opacity:.3}40%{transform:scale(1);opacity:1}}
+
+/* Progress bar */
+#pb{height:2px;background:linear-gradient(90deg,var(--cyan),var(--purple));position:fixed;top:0;left:0;z-index:9998;transition:width .3s;width:0%;}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:rgba(0,212,255,.18);border-radius:4px;}
+
+/* Responsive */
+@media(max-width:900px){.dec-grid,.cmp-grid{grid-template-columns:1fr;}.signals-grid{grid-template-columns:1fr;}}
+
+/* Glow */
+.glow{box-shadow:0 0 24px rgba(0,212,255,.06);}
+</style>
+</head>
+<body>
+<div id="pb"></div>
+
+<!-- API Key Modal -->
+<div class="modal-ov" id="apiModal">
+  <div class="modal">
+    <h3>🔑 API Configuration</h3>
+    <button class="m-close" onclick="closeModal()">✕</button>
+    <div class="api-f"><label>Claude API Key (Anthropic)</label><input type="password" id="mClaudeKey" placeholder="sk-ant-api03-..."></div>
+    <div class="api-f"><label>OpenAI API Key (for GPT-4 comparison)</label><input type="password" id="mOpenaiKey" placeholder="sk-proj-..."></div>
+    <div class="api-f"><label>Alpha Vantage Key (live stock prices)</label><input type="text" id="mAlphaKey" placeholder="Free at alphavantage.co"></div>
+    <div class="api-f"><label>NewsAPI Key (live headlines)</label><input type="text" id="mNewsKey" placeholder="Free at newsapi.org"></div>
+    <button class="save-btn" onclick="saveKeysModal()">✓ Save & Enable Live Mode</button>
+  </div>
+</div>
+
+<div class="app">
+  <!-- Header -->
+  <header class="hdr">
+    <div class="logo">
+      <div class="logo-ico">📈</div>
+      <div>
+        <div class="logo-name">Stock<span>Mind</span></div>
+        <div class="logo-tag">4-Agent AI · Beginner Friendly</div>
+      </div>
+    </div>
+    <div class="hdr-r">
+      <div id="modeBadge" class="badge badge-demo" onclick="toggleMode()">● DEMO</div>
+      <button class="hdr-btn" onclick="openModal()">🔑 API Keys</button>
+      <button class="spin-btn" id="refreshBtn" onclick="refreshAll()">↻</button>
+    </div>
+  </header>
+
+  <div class="main">
+    <!-- Sidebar -->
+    <aside class="sb">
+      <div class="sb-sec">
+        <div class="sb-lbl">Navigation</div>
+        <div class="nav-i on" onclick="goPanel('news',this)"><span class="ic">📰</span>News Themes</div>
+        <div class="nav-i" onclick="goPanel('watchlist',this)"><span class="ic">📊</span>Watchlist</div>
+        <div class="nav-i" onclick="goPanel('decision',this)"><span class="ic">🧠</span>AI Decision</div>
+        <div class="nav-i" onclick="goPanel('settings',this)"><span class="ic">⚙️</span>Settings</div>
+      </div>
+      <div class="sb-stocks">
+        <div class="sb-lbl">Quick Access</div>
+        <div id="sbStocks"></div>
+      </div>
+    </aside>
+
+    <!-- Content -->
+    <div class="content">
+
+      <!-- NEWS PANEL -->
+      <div class="panel on" id="panel-news">
+        <div class="sec-title">📰 Market Themes</div>
+        <div class="sec-sub" id="newsSubtitle">Agent 1 · AI-clustered from headlines · 4 active themes</div>
+        <div class="ticker-wrap"><div class="ticker-inner" id="newsTicker"></div></div>
+        <div id="themeCards"></div>
+        <div class="card">
+          <div class="ch"><div class="ct"><div class="dot"></div>Recent Headlines</div></div>
+          <div id="headlineList"></div>
+        </div>
+      </div>
+
+      <!-- WATCHLIST PANEL -->
+      <div class="panel" id="panel-watchlist">
+        <div class="sec-title">📊 AI-Ranked Watchlist</div>
+        <div class="sec-sub">Agent 3 · Ranked by sentiment + momentum + risk score</div>
+        <div id="rankCards"></div>
+        <div style="margin-top:20px">
+          <div class="sec-title" style="font-size:16px;margin-bottom:4px">All Stocks</div>
+          <div class="sec-sub" style="margin-bottom:12px">Click any stock to run full AI analysis</div>
+          <div id="allStocks"></div>
+        </div>
+      </div>
+
+      <!-- DECISION PANEL -->
+      <div class="panel" id="panel-decision">
+        <div id="decContent"></div>
+      </div>
+
+      <!-- SETTINGS PANEL -->
+      <div class="panel" id="panel-settings">
+        <div class="sec-title">⚙️ Settings</div>
+        <div class="sec-sub">Personalise your analysis engine</div>
+
+        <div class="set-sec">
+          <div class="set-lbl">Your Risk Profile</div>
+          <div class="ch-grp" id="riskChoices">
+            <div class="ch-i sel" data-v="conservative" onclick="pickRisk(this)">
+              <div><div class="ch-name">🛡️ Conservative</div><div class="ch-desc">Prefers stability, lower risk — risk scores amplified</div></div>
+              <div class="ch-ck">✓</div>
+            </div>
+            <div class="ch-i" data-v="moderate" onclick="pickRisk(this)">
+              <div><div class="ch-name">⚖️ Moderate</div><div class="ch-desc">Balanced risk/reward approach</div></div>
+              <div class="ch-ck"></div>
+            </div>
+            <div class="ch-i" data-v="aggressive" onclick="pickRisk(this)">
+              <div><div class="ch-name">🚀 Aggressive</div><div class="ch-desc">High risk, high reward focus — risk scores reduced</div></div>
+              <div class="ch-ck"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="set-sec">
+          <div class="set-lbl">AI Engine</div>
+          <div class="ch-grp" id="aiChoices">
+            <div class="ch-i sel" data-v="combined" onclick="pickAI(this)">
+              <div><div class="ch-name">⇄ Compare Both AIs</div><div class="ch-desc">Claude + GPT-4 side-by-side with consensus view</div></div>
+              <div class="ch-ck">✓</div>
+            </div>
+            <div class="ch-i" data-v="claude" onclick="pickAI(this)">
+              <div><div class="ch-name">✦ Claude (Anthropic)</div><div class="ch-desc">Uses claude-opus-4-6 for all 4 agents</div></div>
+              <div class="ch-ck"></div>
+            </div>
+            <div class="ch-i" data-v="openai" onclick="pickAI(this)">
+              <div><div class="ch-name">◎ GPT-4 (OpenAI)</div><div class="ch-desc">Uses GPT-4o for analysis</div></div>
+              <div class="ch-ck"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="set-sec">
+          <div class="set-lbl">Data Source</div>
+          <div class="tgl-wrap">
+            <div><div style="font-size:13px;font-weight:600" id="modeTitle">Demo Mode</div><div style="font-size:11px;color:var(--muted);margin-top:2px" id="modeSub">Simulated data · no API key needed</div></div>
+            <label class="tgl"><input type="checkbox" id="liveToggle" onchange="toggleMode()"><div class="tgl-sl"></div></label>
+          </div>
+        </div>
+
+        <div class="set-sec">
+          <div class="set-lbl">API Keys</div>
+          <div class="api-box">
+            <div class="api-f"><label>Claude API Key</label><input type="password" id="sClaudeKey" placeholder="sk-ant-api03-..."></div>
+            <div class="api-f"><label>OpenAI API Key</label><input type="password" id="sOpenaiKey" placeholder="sk-proj-..."></div>
+            <div class="api-f"><label>Alpha Vantage (free stock prices)</label><input type="text" id="sAlphaKey" placeholder="alphavantage.co — free key"></div>
+            <div class="api-f"><label>NewsAPI (free headlines)</label><input type="text" id="sNewsKey" placeholder="newsapi.org — free key"></div>
+            <button class="save-btn" onclick="saveKeysSettings()">💾 Save API Keys</button>
+          </div>
+        </div>
+
+        <div class="set-sec">
+          <div class="set-lbl">Legal Disclaimer</div>
+          <div class="disc-box"><strong>⚠️ NOT Financial Advice.</strong> StockMind provides AI-generated probability scores and educational content only. Buy/Hold/Sell percentages are statistical signals, not investment recommendations. Always consult a qualified financial advisor. Past performance does not predict future results.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// MOCK DATA
+// ============================================================
+const STOCKS = [
+  {id:'AAPL',name:'Apple Inc.',price:189.30,change:2.45,pct:1.31,vol:54320000,cap:'2.94T',sector:'Technology'},
+  {id:'TSLA',name:'Tesla Inc.',price:248.50,change:-8.20,pct:-3.19,vol:98450000,cap:'792B',sector:'Auto / Energy'},
+  {id:'NVDA',name:'NVIDIA Corp.',price:875.40,change:22.30,pct:2.61,vol:42100000,cap:'2.16T',sector:'Semiconductors'},
+  {id:'MSFT',name:'Microsoft Corp.',price:415.20,change:1.80,pct:0.44,vol:21300000,cap:'3.08T',sector:'Technology'},
+  {id:'AMZN',name:'Amazon.com Inc.',price:178.90,change:-2.10,pct:-1.16,vol:35600000,cap:'1.87T',sector:'E-Commerce / Cloud'},
+  {id:'META',name:'Meta Platforms',price:502.30,change:9.70,pct:1.97,vol:18900000,cap:'1.28T',sector:'Social Media'},
+  {id:'GOOGL',name:'Alphabet Inc.',price:165.80,change:0.60,pct:0.36,vol:25400000,cap:'2.06T',sector:'Advertising / Cloud'},
+  {id:'BRK.B',name:'Berkshire Hathaway',price:398.20,change:1.20,pct:0.30,vol:3450000,cap:'869B',sector:'Financials / Value'},
+];
+
+const COMPANY_PROFILES = {
+  AAPL: {
+    about: "Apple Inc. designs and sells consumer electronics, software, and services. Founded in 1976, it is one of the most valuable companies in the world. It makes the iPhone, Mac, iPad, Apple Watch, and AirPods. Apple earns a large share of its revenue from services like the App Store, iCloud, Apple Music, and Apple TV+.",
+    investments: [
+      {icon:'📱',label:'iPhone',pct:'52%'},
+      {icon:'💻',label:'Mac / iPad',pct:'18%'},
+      {icon:'🎵',label:'Services',pct:'22%'},
+      {icon:'⌚',label:'Wearables',pct:'8%'},
+    ]
+  },
+  TSLA: {
+    about: "Tesla Inc. designs and manufactures electric vehicles (EVs), energy storage systems, and solar products. Founded in 2003, it pioneered mass-market EVs with models like the Model 3 and Model Y. Tesla also builds AI and autonomous driving technology, and recently expanded into energy with Powerwall and Megapack products.",
+    investments: [
+      {icon:'🚗',label:'EVs',pct:'85%'},
+      {icon:'⚡',label:'Energy',pct:'9%'},
+      {icon:'🤖',label:'AI / FSD',pct:'4%'},
+      {icon:'🏭',label:'Services',pct:'2%'},
+    ]
+  },
+  NVDA: {
+    about: "NVIDIA Corporation designs graphics processing units (GPUs) used in gaming, professional visualization, data centers, and artificial intelligence. Its H100 and Blackwell GPUs power most of the world's AI training infrastructure. NVIDIA's CUDA software platform has made it the dominant player in AI computing.",
+    investments: [
+      {icon:'🤖',label:'AI / Data Centers',pct:'78%'},
+      {icon:'🎮',label:'Gaming GPUs',pct:'14%'},
+      {icon:'🚗',label:'Automotive AI',pct:'5%'},
+      {icon:'💊',label:'Healthcare AI',pct:'3%'},
+    ]
+  },
+  MSFT: {
+    about: "Microsoft Corporation develops software, cloud services, and hardware. It is best known for Windows, Office 365, and the Azure cloud platform. Microsoft has heavily invested in AI through its partnership with OpenAI and integration of Copilot across its products. It also owns LinkedIn and Xbox gaming.",
+    investments: [
+      {icon:'☁️',label:'Azure Cloud',pct:'45%'},
+      {icon:'💼',label:'Office / Copilot',pct:'30%'},
+      {icon:'🎮',label:'Xbox / Gaming',pct:'14%'},
+      {icon:'💼',label:'LinkedIn',pct:'11%'},
+    ]
+  },
+  AMZN: {
+    about: "Amazon.com Inc. is the world's largest e-commerce and cloud computing company. AWS (Amazon Web Services) is the most widely used cloud platform globally. Amazon also operates Prime Video, Alexa, Whole Foods, and advertising services. Its logistics network is one of the most advanced in the world.",
+    investments: [
+      {icon:'☁️',label:'AWS Cloud',pct:'17%'},
+      {icon:'🛒',label:'E-Commerce',pct:'56%'},
+      {icon:'📦',label:'Logistics',pct:'16%'},
+      {icon:'📺',label:'Prime / Ads',pct:'11%'},
+    ]
+  },
+  META: {
+    about: "Meta Platforms owns Facebook, Instagram, WhatsApp, and Threads — platforms used by over 3 billion people. Meta earns most of its revenue from digital advertising. It is also investing heavily in AI (Meta AI assistant) and the metaverse through its Reality Labs division, which develops VR/AR headsets.",
+    investments: [
+      {icon:'📱',label:'Facebook / IG',pct:'68%'},
+      {icon:'💬',label:'WhatsApp',pct:'18%'},
+      {icon:'🥽',label:'Reality Labs',pct:'9%'},
+      {icon:'🤖',label:'Meta AI',pct:'5%'},
+    ]
+  },
+  GOOGL: {
+    about: "Alphabet Inc. is the parent company of Google, which operates the world's most used search engine, YouTube, Chrome, and Android. Google Cloud is the third-largest cloud provider. Alphabet's Other Bets division invests in moonshot projects like Waymo (self-driving cars) and DeepMind (AI research).",
+    investments: [
+      {icon:'🔍',label:'Google Search',pct:'58%'},
+      {icon:'📺',label:'YouTube',pct:'17%'},
+      {icon:'☁️',label:'Google Cloud',pct:'12%'},
+      {icon:'🚗',label:'Waymo / Other',pct:'13%'},
+    ]
+  },
+  'BRK.B': {
+    about: "Berkshire Hathaway is a diversified holding company led by Warren Buffett. It owns dozens of businesses outright — including GEICO insurance, BNSF railway, and Duracell — and holds large stock positions in Apple, Bank of America, American Express, and Coca-Cola. It is considered one of the safest long-term investments.",
+    investments: [
+      {icon:'🍎',label:'Apple (stock)',pct:'41%'},
+      {icon:'🚂',label:'BNSF Railway',pct:'20%'},
+      {icon:'🏦',label:'Insurance / Banks',pct:'27%'},
+      {icon:'⚡',label:'Utilities / Energy',pct:'12%'},
+    ]
+  },
+};
+
+const HEADLINES = [
+  {ticker:'AAPL',headline:'Apple Vision Pro sales exceed Q1 expectations, boosting services revenue',source:'Bloomberg',sentiment:0.75,time:'1h ago'},
+  {ticker:'TSLA',headline:'Tesla faces recall of 200,000 vehicles over Autopilot software defect',source:'Reuters',sentiment:-0.65,time:'2h ago'},
+  {ticker:'NVDA',headline:'NVIDIA unveils Blackwell Ultra GPU — AI demand remains red-hot',source:'TechCrunch',sentiment:0.88,time:'30m ago'},
+  {ticker:'MSFT',headline:'Microsoft Copilot drives 23% enterprise subscription increase',source:'Forbes',sentiment:0.78,time:'1.5h ago'},
+  {ticker:'AMZN',headline:'Amazon Web Services wins $3B Pentagon cloud contract',source:'CNBC',sentiment:0.72,time:'2.5h ago'},
+  {ticker:'META',headline:'Meta AI assistant surpasses 1 billion monthly active users',source:'FT',sentiment:0.82,time:'45m ago'},
+  {ticker:'GOOGL',headline:'EU antitrust regulators open formal probe into Google Search dominance',source:'Reuters',sentiment:-0.55,time:'3h ago'},
+  {ticker:'TSLA',headline:'Elon Musk sells $2B in Tesla shares amid broader market uncertainty',source:'Bloomberg',sentiment:-0.70,time:'4h ago'},
+];
+
+const THEMES = [
+  {id:'t1',topic:'AI Infrastructure Boom',summary:'GPU demand, data centre expansion, and enterprise AI adoption are driving strong revenue growth across semiconductor and cloud leaders.',sentiment:'Strongly Bullish',impact:'High',headlines:['NVIDIA unveils Blackwell Ultra GPU architecture','Microsoft Copilot drives 23% subscription surge','NVIDIA partners with 50 major hospitals for AI diagnostics'],tickers:['NVDA','MSFT','AMZN']},
+  {id:'t2',topic:'Federal Reserve Policy Shift',summary:'Fed signals possible rate cuts in 2025 amid cooling inflation data, creating tailwinds for growth stocks and tech sector valuations.',sentiment:'Moderately Bullish',impact:'Medium',headlines:['Fed signals two rate cuts possible in 2025','Core PCE inflation cools for third consecutive month'],tickers:['MSFT','AAPL','GOOGL']},
+  {id:'t3',topic:'Tesla Leadership & Execution Risk',summary:'CEO stock sales, recall announcements, and mixed delivery numbers raise concerns about near-term execution and investor confidence.',sentiment:'Bearish',impact:'High',headlines:['Tesla recall of 200k vehicles over software defect','Musk sells $2B in Tesla shares amid market uncertainty'],tickers:['TSLA']},
+  {id:'t4',topic:'Regulatory Pressure on Big Tech',summary:'EU antitrust probes and US regulatory scrutiny create margin pressure and limit expansion in key advertising and cloud markets.',sentiment:'Mildly Bearish',impact:'Medium',headlines:['EU opens probe into Google Search dominance','FTC reviewing Meta historical acquisition strategy'],tickers:['GOOGL','META']},
+];
+
+const RANKS = [
+  {ticker:'NVDA',rank:1,reason:'Exceptional sentiment + strong upward momentum driven by AI infrastructure demand.',sentiment:0.88,momentum:'up',risk:45},
+  {ticker:'META',rank:2,reason:'Positive AI product launches + strong user growth. Regulatory risk manageable near-term.',sentiment:0.82,momentum:'up',risk:38},
+  {ticker:'AAPL',rank:3,reason:'Solid fundamentals, consistent revenue. Vision Pro beat adds near-term catalyst.',sentiment:0.75,momentum:'up',risk:30},
+  {ticker:'MSFT',rank:4,reason:'Enterprise AI growth story intact. Lower volatility ideal for core positions.',sentiment:0.78,momentum:'up',risk:28},
+  {ticker:'AMZN',rank:5,reason:'AWS contract win positive but stock has mixed momentum. Watch support levels.',sentiment:0.72,momentum:'sideways',risk:42},
+  {ticker:'GOOGL',rank:6,reason:'EU probe creates headline risk. Core business stable but regulatory overhang weighs.',sentiment:0.36,momentum:'sideways',risk:52},
+  {ticker:'TSLA',rank:7,reason:'High volatility + negative news flow + CEO share sales create significant headwinds.',sentiment:0.30,momentum:'volatile',risk:78},
+  {ticker:'BRK.B',rank:8,reason:'Defensive with low volatility. Limited near-term catalysts but strong downside protection.',sentiment:0.50,momentum:'sideways',risk:18},
+];
+
+// Mock AI analysis results (used in DEMO mode)
+const MOCK_ANALYSIS = {
+  AAPL:{beginner_summary:"Apple is one of the world's largest technology companies. It makes the iPhone, Mac, and iPad, and earns a growing amount from services like the App Store and iCloud. Apple has a long history of steady growth and loyal customers. Recent news shows its new Vision Pro headset is selling better than expected. This means Apple's revenue is likely to stay strong in the near future.",growth_signals:["Vision Pro sales beat analyst expectations, showing strong new product demand","Services revenue growing steadily — less dependent on hardware cycles","Positive analyst sentiment with multiple price target upgrades this month"],risks:["iPhone sales in China face competition from Huawei and local brands","High valuation — the stock is priced for perfection, leaving little room for error","AI feature rollout slower than competitors like Google and Microsoft"],probability:{buy:65,hold:28,sell:7},confidence:"High",beginner_tag:"Beginner Friendly",news_explained:"Apple's Vision Pro beating sales targets means investors now expect Apple's services and hardware ecosystem to grow faster than predicted.",market_story:"Right now the market is focusing on AI hardware and premium consumer tech, which may positively affect Apple as it rolls out AI features in its next iPhone generation."},
+  TSLA:{beginner_summary:"Tesla makes electric cars and energy products. It was the first company to make EVs popular for everyday people. However, Tesla has been facing challenges lately — its CEO Elon Musk has been distracted by his other companies, and Tesla recalled thousands of cars due to software issues. Competition from Chinese EV makers is also growing. The stock has been very volatile, meaning its price moves up and down a lot.",growth_signals:["Energy storage business (Megapack) growing strongly with new utility contracts","Full Self-Driving (FSD) technology could become a major revenue stream if approved","Tesla still has the largest EV charging network in North America"],risks:["CEO sold $2 billion worth of shares — this can signal lack of confidence","Recall of 200,000 vehicles damages brand reputation and adds repair costs","Chinese competitors like BYD are gaining market share rapidly"],probability:{buy:28,hold:25,sell:47},confidence:"Medium",beginner_tag:"High Risk Stock",news_explained:"Elon Musk selling $2 billion of Tesla shares is a concerning signal — when company leaders sell large amounts, it often means they expect the stock to drop or face challenges.",market_story:"Right now the market is focusing on EV competition and Tesla's leadership stability, which may pressure Tesla's stock price until clear positive catalysts emerge."},
+  NVDA:{beginner_summary:"NVIDIA makes computer chips called GPUs that power video games and, more importantly, artificial intelligence. Almost every major AI company — including OpenAI, Google, and Meta — uses NVIDIA's chips. The demand for AI is growing so fast that NVIDIA can barely make chips fast enough to meet orders. This has caused NVIDIA's revenue and profits to grow dramatically, making it one of the most talked-about stocks in the world.",growth_signals:["New Blackwell Ultra GPU architecture signals continued dominance in AI chips","Healthcare AI partnerships open massive new revenue market beyond tech industry","Government and enterprise AI spending expected to double in next 2 years"],risks:["Stock is trading at very high valuations — if AI spending slows, the drop could be sharp","China export restrictions limit NVIDIA from selling top chips to its second-biggest market","Competition from AMD and in-house chips from Google and Amazon is growing"],probability:{buy:74,hold:18,sell:8},confidence:"High",beginner_tag:"Moderate Risk",news_explained:"NVIDIA's new Blackwell Ultra GPU launch means the company stays ahead of competitors and can charge premium prices, directly boosting future revenue.",market_story:"Right now the market is focusing on AI infrastructure buildout, which strongly benefits NVIDIA as the primary supplier of AI training chips to data centres worldwide."},
+  MSFT:{beginner_summary:"Microsoft makes Windows, the Office apps (Word, Excel), and runs Azure — one of the biggest cloud computing platforms in the world. Microsoft partnered with OpenAI and invested billions in ChatGPT technology. It now sells AI tools called Copilot that help people work faster in Word, Excel, and Teams. This AI strategy is bringing in new customers and increasing the amount existing customers pay each month.",growth_signals:["Copilot AI integration driving 23% increase in enterprise subscription revenue","Azure cloud growing at 29% year-over-year, outpacing competitor expectations","OpenAI partnership gives Microsoft first-mover advantage in enterprise AI tools"],risks:["EU and US regulators scrutinising Microsoft's OpenAI investment for antitrust concerns","High share price means any slowdown in AI adoption could trigger a sharp correction","Competitors like Google Workspace and Salesforce are catching up with AI features"],probability:{buy:62,hold:33,sell:5},confidence:"High",beginner_tag:"Beginner Friendly",news_explained:"Microsoft's Copilot subscription surge shows businesses are willing to pay extra for AI productivity tools, which is excellent news for Microsoft's long-term revenue growth.",market_story:"Right now the market is focusing on enterprise AI adoption, which directly benefits Microsoft as it embeds AI tools into software that millions of businesses already use every day."},
+  AMZN:{beginner_summary:"Amazon runs the world's biggest online shopping platform and the world's most widely used cloud computing service, AWS. While most people know Amazon for packages delivered to their door, the cloud business actually drives most of its profit. Amazon has also been growing its advertising business and Prime Video. Recent news shows AWS won a major government cloud contract, which is a positive sign.",growth_signals:["$3 billion Pentagon contract win confirms AWS remains top choice for major clients","Advertising revenue growing 22% year-over-year — highly profitable business line","Amazon's AI investment in Anthropic and AWS AI tools is attracting enterprise customers"],risks:["E-commerce margins remain thin due to high logistics and labour costs","Antitrust scrutiny in Europe and the US could lead to costly regulatory penalties","Stock price has underperformed sector peers in 2025 — momentum is mixed"],probability:{buy:55,hold:30,sell:15},confidence:"Medium",beginner_tag:"Moderate Risk",news_explained:"Amazon winning the Pentagon cloud contract confirms AWS is trusted for the highest-security government workloads, which helps attract more large enterprise customers.",market_story:"Right now the market is focusing on cloud AI spending and enterprise deals, which benefits Amazon but the company's mixed price momentum means investors remain cautious."},
+  META:{beginner_summary:"Meta owns Facebook, Instagram, and WhatsApp — three of the world's most-used social media apps. Meta earns money by showing advertisements to its billions of users. Recently, Meta has been investing heavily in AI — its AI assistant is now used by over 1 billion people. Meta's earnings have been strong and it has reduced its costs significantly, which is boosting its profits. It also invests in VR headsets through its Reality Labs division.",growth_signals:["Meta AI assistant reaching 1 billion users signals major competitive strength in AI","Strong ad revenue growth driven by Reels and AI-personalised content recommendations","Cost discipline programme significantly improved profit margins over the past year"],risks:["EU digital regulations (DMA) could limit how Meta uses user data for ads in Europe","Reality Labs metaverse division is still losing billions of dollars annually","Younger users shifting towards TikTok could gradually weaken Instagram engagement"],probability:{buy:68,hold:22,sell:10},confidence:"High",beginner_tag:"Moderate Risk",news_explained:"Meta AI reaching 1 billion users means Meta now has one of the world's most widely adopted AI assistants, which strengthens its advertising targeting and keeps users on its platforms longer.",market_story:"Right now the market is focusing on AI assistant adoption and digital advertising strength, both of which are working in Meta's favour as competitors try to catch up."},
+  GOOGL:{beginner_summary:"Alphabet owns Google — the most used search engine in the world — plus YouTube, Chrome browser, and Android phones. It earns most of its money from online advertising. Google Cloud is growing fast and competing with Amazon and Microsoft. However, Google is facing a serious challenge: regulators in Europe and the US believe it has too much control over internet search and online advertising.",growth_signals:["Google Cloud growing at 28% year-over-year with strong enterprise AI demand","YouTube advertising revenue recovering strongly after a slowdown in 2023","Gemini AI model competitive with GPT-4 and integrated across Google's products"],risks:["EU antitrust probe could result in billions in fines and forced changes to how Google operates","AI-powered search competitors like Perplexity and ChatGPT threaten Google's core business","Regulatory uncertainty creates a cloud over future revenue from search advertising"],probability:{buy:46,hold:38,sell:16},confidence:"Medium",beginner_tag:"Moderate Risk",news_explained:"The EU opening a formal antitrust investigation into Google Search means regulators could force Google to change how it works, which could reduce its dominance and hurt advertising revenue.",market_story:"Right now the market is watching the regulatory battle closely — if Google faces heavy penalties, it could impact its ability to grow, making many investors cautious despite strong underlying business results."},
+  'BRK.B':{beginner_summary:"Berkshire Hathaway is a giant company that owns many other businesses and also invests in stocks of other companies. It is run by the legendary investor Warren Buffett. Berkshire owns companies like GEICO insurance, Burlington Northern railway, and holds a massive investment in Apple. It is known as a safe, reliable, long-term investment that grows steadily rather than dramatically.",growth_signals:["Massive cash reserves ($168 billion) gives Berkshire flexibility to buy companies if market drops","Apple stock position continues to appreciate, adding billions to book value","Insurance businesses benefiting from higher premiums due to increased climate-related claims"],risks:["Warren Buffett is 94 years old — leadership succession is a concern for long-term investors","The stock rarely offers exciting short-term gains — better suited to patient investors","Limited exposure to fast-growing AI and technology sectors means slower growth potential"],probability:{buy:38,hold:57,sell:5},confidence:"Medium",beginner_tag:"Beginner Friendly",news_explained:"Berkshire's enormous cash position means it is ready to make major acquisitions if the market falls, which is one reason long-term investors feel safe holding this stock.",market_story:"Right now the market is focused on growth and AI, which makes Berkshire a quieter choice — but its stability and cash reserves make it attractive if market conditions become more uncertain."},
+};
+
+const DECISIONS_GPT = {
+  AAPL:{buy:60,hold:32,sell:8},TSLA:{buy:32,hold:28,sell:40},NVDA:{buy:70,hold:22,sell:8},
+  MSFT:{buy:58,hold:36,sell:6},AMZN:{buy:52,hold:34,sell:14},META:{buy:72,hold:18,sell:10},
+  GOOGL:{buy:44,hold:40,sell:16},'BRK.B':{buy:35,hold:60,sell:5},
+};
+
+const RISK_BASE = {AAPL:30,TSLA:78,NVDA:45,MSFT:28,AMZN:42,META:38,GOOGL:52,'BRK.B':18};
+const RISK_MULT = {conservative:1.3,moderate:1.0,aggressive:0.7};
+
+// ============================================================
+// STATE
+// ============================================================
+const S = {
+  mode:'demo', risk:'conservative', ai:'combined',
+  stock:null, keys:{claude:'',openai:'',alpha:'',news:''}
+};
+
+// ============================================================
+// BOOT
+// ============================================================
+function init(){
+  renderSidebar(); renderTicker(); renderThemes(); renderHeadlines(); renderRanks(); renderAllStocks(); renderDecEmpty();
+}
+
+// ============================================================
+// SIDEBAR
+// ============================================================
+function renderSidebar(){
+  document.getElementById('sbStocks').innerHTML = STOCKS.slice(0,7).map(s=>`
+    <div class="sk-i ${S.stock===s.id?'on':''}" onclick="selectStock('${s.id}')">
+      <span class="sk-t">${s.id}</span>
+      <span class="sk-p ${s.pct>=0?'pos':'neg'}">${s.pct>=0?'+':''}${s.pct.toFixed(1)}%</span>
+    </div>`).join('');
+}
+
+// ============================================================
+// TICKER
+// ============================================================
+function renderTicker(){
+  const items = STOCKS.map(s=>`<span class="tk-i"><span class="tkt">${s.id}</span> $${s.price.toFixed(2)} <span class="${s.pct>=0?'pos':'neg'}">${s.pct>=0?'+':''}${s.pct.toFixed(2)}%</span></span>`).join('');
+  document.getElementById('newsTicker').innerHTML = items+items;
+}
+
+// ============================================================
+// THEMES
+// ============================================================
+function renderThemes(){
+  document.getElementById('themeCards').innerHTML = THEMES.map(t=>{
+    const sc = t.sentiment.toLowerCase().includes('bull')?'sent-bull':t.sentiment.toLowerCase().includes('bear')?'sent-bear':'sent-neu';
+    const si = t.sentiment.toLowerCase().includes('bull')?'▲':t.sentiment.toLowerCase().includes('bear')?'▼':'◆';
+    const ic = `i${t.impact[0].toLowerCase()}`;
+    const dc = t.impact==='High'?'#ff4757':t.impact==='Medium'?'#ffa502':'#00e676';
+    return `<div class="theme-c" id="tc-${t.id}" onclick="toggleTheme('${t.id}')">
+      <div class="ttop">
+        <div style="flex:1">
+          <div class="tmeta"><span class="ibadge ${ic}">${t.impact.toUpperCase()} IMPACT</span>${t.tickers.map(x=>`<span class="ttag">$${x}</span>`).join('')}</div>
+          <div class="tname">${t.topic}</div>
+          <div class="tsum">${t.summary}</div>
+          <div class="sent-row"><span class="${sc}">${si}</span><span class="sent-lbl ${sc}">${t.sentiment}</span></div>
+        </div>
+        <span class="chev">▾</span>
+      </div>
+      <div class="tbody">
+        <div class="hl-lbl">Related Headlines</div>
+        ${t.headlines.map(h=>`<div class="hl-i"><div class="hldot" style="background:${dc}"></div><span>${h}</span></div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+function toggleTheme(id){document.getElementById('tc-'+id).classList.toggle('exp');}
+
+// ============================================================
+// HEADLINES
+// ============================================================
+function renderHeadlines(){
+  document.getElementById('headlineList').innerHTML = HEADLINES.map(h=>{
+    const sc = h.sentiment>0.3?'var(--green)':h.sentiment<-0.3?'var(--red)':'var(--muted2)';
+    const sl = h.sentiment>0.3?'Bullish':h.sentiment<-0.3?'Bearish':'Neutral';
+    return `<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--border)">
+      <div style="width:3px;border-radius:2px;background:${sc};height:44px;flex-shrink:0;margin-top:2px"></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:500;line-height:1.5;margin-bottom:4px">${h.headline}</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <span style="font-family:var(--font-m);font-size:10px;color:var(--cyan);font-weight:600">$${h.ticker}</span>
+          <span style="color:var(--muted)">·</span>
+          <span style="font-size:10px;color:var(--muted)">${h.source}</span>
+          <span style="color:var(--muted)">·</span>
+          <span style="font-family:var(--font-m);font-size:10px;font-weight:700;color:${sc}">${sl}</span>
+          <span style="color:var(--muted);font-size:10px;margin-left:auto">${h.time}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+// RANKS
+// ============================================================
+function renderRanks(){
+  document.getElementById('rankCards').innerHTML = RANKS.map(r=>{
+    const sk = STOCKS.find(s=>s.id===r.ticker);
+    const rc = r.rank===1?'r1':r.rank===2?'r2':r.rank===3?'r3':'rx';
+    const mc = `m${r.momentum[0]}${r.momentum==='volatile'?'2':''}`;
+    const ml = r.momentum==='up'?'↑ Uptrend':r.momentum==='down'?'↓ Down':r.momentum==='volatile'?'⚡ Volatile':'→ Sideways';
+    const rc2 = r.risk<40?'var(--green)':r.risk<65?'var(--orange)':'var(--red)';
+    const sc2 = r.sentiment>0.6?'var(--green)':r.sentiment<0.4?'var(--red)':'var(--orange)';
+    return `<div class="rank-c" onclick="selectStock('${r.ticker}')">
+      <div class="rnum ${rc}">#${r.rank}</div>
+      <div class="rb">
+        <div class="rtop">
+          <span class="rticker">${r.ticker}</span>
+          <span class="${sk&&sk.pct>=0?'pos':'neg'}" style="font-family:var(--font-m);font-size:12px">${sk?(sk.pct>=0?'+':'')+sk.pct.toFixed(2)+'%':''}</span>
+          <span class="mbadge ${mc}">${ml}</span>
+        </div>
+        <div class="rreason">${r.reason}</div>
+      </div>
+      <div class="rm">
+        <div class="met"><div class="mv" style="color:${sc2}">${Math.round(r.sentiment*100)}%</div><div class="ml">Sent</div></div>
+        <div class="met"><div class="mv" style="color:${rc2}">${r.risk}</div><div class="ml">Risk</div></div>
+        ${sk?`<div class="met"><div class="mv">$${sk.price.toFixed(0)}</div><div class="ml">Price</div></div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+// ALL STOCKS
+// ============================================================
+function renderAllStocks(){
+  document.getElementById('allStocks').innerHTML = STOCKS.map(s=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 13px;margin-bottom:8px;cursor:pointer;transition:all .15s"
+      onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border)'"
+      onclick="selectStock('${s.id}')">
+      <div>
+        <div style="font-family:var(--font-m);font-size:13px;font-weight:700">${s.id}</div>
+        <div style="font-size:11px;color:var(--muted)">${s.name} · ${s.sector}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px">
+        <div style="text-align:right">
+          <div style="font-family:var(--font-m);font-size:13px;font-weight:600">$${s.price.toFixed(2)}</div>
+          <div style="font-family:var(--font-m);font-size:11px;font-weight:600;color:${s.pct>=0?'var(--green)':'var(--red)'}">${s.pct>=0?'+':''}${s.pct.toFixed(2)}%</div>
+        </div>
+        <button style="background:rgba(0,212,255,.08);border:1px solid var(--border2);color:var(--cyan);border-radius:6px;padding:5px 10px;font-size:11px;font-family:var(--font-m)">Analyse →</button>
+      </div>
+    </div>`).join('');
+}
+
+// ============================================================
+// DECISION EMPTY
+// ============================================================
+function renderDecEmpty(){
+  document.getElementById('decContent').innerHTML = `
+    <div class="empty">
+      <div class="eico">🧠</div>
+      <h3>Select a stock to analyse</h3>
+      <p>Get full AI analysis: company profile, beginner-friendly explanation, risk score, Buy/Hold/Sell probabilities and Claude vs GPT-4 comparison.</p>
+      <div class="qgrid">
+        ${STOCKS.slice(0,6).map(s=>`<div class="qbtn" onclick="selectStock('${s.id}')">${s.id}<div class="qp ${s.pct>=0?'pos':'neg'}">${s.pct>=0?'+':''}${s.pct.toFixed(1)}%</div></div>`).join('')}
+      </div>
+    </div>`;
+}
+
+// ============================================================
+// SELECT STOCK + RENDER DECISION
+// ============================================================
+function selectStock(ticker){
+  S.stock = ticker;
+  renderSidebar();
+  goPanel('decision', document.querySelectorAll('.nav-i')[2]);
+
+  if(S.mode==='live' && (S.keys.claude||S.keys.openai)){
+    renderDecLoading(ticker);
+    runLiveAnalysis(ticker);
+  } else {
+    renderDecision(ticker, MOCK_ANALYSIS[ticker]);
+  }
+}
+
+function renderDecLoading(ticker){
+  const sk = STOCKS.find(s=>s.id===ticker);
+  document.getElementById('decContent').innerHTML = `
+    <div class="sth-card">
+      <div class="sth-l">
+        <div class="ticker">${ticker}</div>
+        <div class="co-name">${sk?sk.name:''}</div>
+      </div>
+      <div class="sth-r"><div class="sth-price">$${sk?sk.price.toFixed(2):'—'}</div></div>
+    </div>
+    <div class="card"><div class="ch"><div class="ct"><div class="dot"></div>Running AI Agents...</div></div><div class="ld"><span></span><span></span><span></span></div><div style="text-align:center;font-size:12px;color:var(--muted);padding-bottom:16px">Calling Claude API • Fetching live data • Calculating risk score</div></div>`;
+}
+
+function renderDecision(ticker, analysis){
+  const sk = STOCKS.find(s=>s.id===ticker);
+  const prof = COMPANY_PROFILES[ticker];
+  if(!sk||!prof||!analysis) return;
+
+  const baseRisk = RISK_BASE[ticker]||50;
+  const risk = Math.min(Math.round(baseRisk * (RISK_MULT[S.risk]||1)), 100);
+  const riskLabel = risk<30?'Low Risk':risk<55?'Moderate':risk<75?'High Risk':'Extreme';
+  const riskColor = risk<30?'var(--green)':risk<55?'var(--orange)':risk<75?'var(--red)':'var(--purple)';
+
+  const dC = analysis.probability;
+  const dG = DECISIONS_GPT[ticker]||{buy:50,hold:30,sell:20};
+  const dCon = {buy:Math.round((dC.buy+dG.buy)/2),hold:Math.round((dC.hold+dG.hold)/2),sell:Math.round((dC.sell+dG.sell)/2)};
+  const showD = S.ai==='openai'?dG:S.ai==='claude'?dC:dCon;
+  const agree = Math.round(100 - Math.abs(dC.buy-dG.buy));
+  const agreeColor = agree>80?'var(--green)':agree>60?'var(--orange)':'var(--red)';
+
+  const aiTag = S.ai==='claude'?'<span class="ai-tag ai-claude">CLAUDE</span>':S.ai==='openai'?'<span class="ai-tag ai-gpt">GPT-4</span>':'<span class="ai-tag ai-con">CONSENSUS</span>';
+  const confC = analysis.confidence==='High'?'ch':analysis.confidence==='Medium'?'cm':'cl';
+  const btag = analysis.beginner_tag==='Beginner Friendly'?'btag-bf':analysis.beginner_tag==='Moderate Risk'?'btag-mod':'btag-hi';
+  const bicon = analysis.beginner_tag==='Beginner Friendly'?'🟢':analysis.beginner_tag==='Moderate Risk'?'🟡':'🔴';
+  const topNews = HEADLINES.find(h=>h.ticker===ticker);
+  const avgSent = HEADLINES.filter(h=>h.ticker===ticker).map(h=>h.sentiment);
+  const sent = avgSent.length ? avgSent.reduce((a,b)=>a+b,0)/avgSent.length : 0;
+  const sentLabel = sent>0.3?'Bullish':sent<-0.3?'Bearish':'Neutral';
+  const sentColor = sent>0.3?'var(--green)':sent<-0.3?'var(--red)':'var(--muted2)';
+  const rank = RANKS.find(r=>r.ticker===ticker);
+
+  document.getElementById('decContent').innerHTML = `
+    <!-- Stock Header -->
+    <div class="sth-card">
+      <div class="sth-l">
+        <div class="ticker">${sk.id}</div>
+        <div class="co-name">${sk.name}</div>
+        <div class="co-tags">
+          <span class="co-tag">${sk.sector}</span>
+          <span class="${btag} btag">${bicon} ${analysis.beginner_tag}</span>
+          ${rank?`<span style="font-family:var(--font-m);font-size:9px;color:var(--yellow)">★ Rank #${rank.rank}</span>`:''}
+        </div>
+      </div>
+      <div class="sth-r">
+        <div class="sth-price">$${sk.price.toFixed(2)}</div>
+        <div class="sth-chg ${sk.pct>=0?'pos':'neg'}">${sk.pct>=0?'+':''}${sk.change.toFixed(2)} (${sk.pct>=0?'+':''}${sk.pct.toFixed(2)}%)</div>
+        <div class="sth-meta">MCap: ${sk.cap} · Vol: ${(sk.vol/1e6).toFixed(1)}M</div>
+      </div>
+    </div>
+
+    <!-- About the Company -->
+    <div class="about-box">
+      <div class="about-title">🏢 About the Company</div>
+      <div class="about-desc">${prof.about}</div>
+      <div class="about-title" style="margin-top:4px;margin-bottom:8px">💼 What Does ${sk.id} Invest In?</div>
+      <div class="invest-grid">
+        ${prof.investments.map(inv=>`<div class="inv-item"><div class="inv-icon">${inv.icon}</div><div class="inv-label">${inv.label}</div><div class="inv-pct">${inv.pct}</div></div>`).join('')}
+      </div>
+    </div>
+
+    <!-- Beginner AI Summary -->
+    <div class="bsec">
+      <div class="bsec-title">🎓 Beginner AI Summary — What You Need to Know</div>
+      <div class="bsec-summary">${analysis.beginner_summary}</div>
+
+      <div class="signals-grid">
+        <div class="sig-box up">
+          <div class="sig-title up">✅ Why It May Go Up</div>
+          ${analysis.growth_signals.map(g=>`<div class="sig-item"><div class="sig-dot" style="background:var(--green)"></div><span>${g}</span></div>`).join('')}
+        </div>
+        <div class="sig-box down">
+          <div class="sig-title down">⚠️ What Risks Exist</div>
+          ${analysis.risks.map(r=>`<div class="sig-item"><div class="sig-dot" style="background:var(--red)"></div><span>${r}</span></div>`).join('')}
+        </div>
+      </div>
+
+      <div class="market-story">📖 <strong>Market Story:</strong> ${analysis.market_story}</div>
+
+      ${topNews?`<div class="news-exp">
+        <div class="news-exp-lbl">📰 Latest News — Explained for Beginners</div>
+        <div class="news-exp-headline">"${topNews.headline}"</div>
+        <div class="news-exp-explain">➤ ${analysis.news_explained}</div>
+      </div>`:''}
+    </div>
+
+    <div class="dec-grid">
+      <!-- Agent 2: Risk -->
+      <div class="card">
+        <div class="ch">
+          <div class="ct"><div class="dot" style="background:${riskColor}"></div>Agent 2 · Risk Score</div>
+          <span style="font-family:var(--font-m);font-size:11px;font-weight:700;color:${riskColor};background:${riskColor}18;padding:3px 9px;border-radius:20px;border:1px solid ${riskColor}44">${riskLabel}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:7px">
+          <span style="font-size:12px;color:var(--muted)">Risk Score (${S.risk} profile)</span>
+          <span style="font-family:var(--font-m);font-size:17px;font-weight:700;color:${riskColor}">${risk} / 100</span>
+        </div>
+        <div class="gauge-track"><div class="gauge-fill" id="gFill" style="width:0%"></div></div>
+        <div class="gauge-lbls"><span>Safe</span><span>Moderate</span><span>Danger</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">
+          <div style="background:var(--bg2);border-radius:8px;padding:9px;text-align:center">
+            <div style="font-family:var(--font-m);font-size:15px;font-weight:700;color:var(--orange)">${Math.round(risk*.4)}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:2px">Volatility Idx</div>
+          </div>
+          <div style="background:var(--bg2);border-radius:8px;padding:9px;text-align:center">
+            <div style="font-family:var(--font-m);font-size:15px;font-weight:700;color:${sentColor}">${sentLabel}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:2px">News Sentiment</div>
+          </div>
+        </div>
+        <div style="margin-top:11px;font-size:11px;color:var(--muted2);line-height:1.6">Based on <strong style="color:var(--text)">${S.risk}</strong> risk profile. Higher profile = lower adjusted score.</div>
+      </div>
+
+      <!-- Agent 4: Decision -->
+      <div class="card">
+        <div class="ch">
+          <div class="ct"><div class="dot"></div>Agent 4 · Decision Ratios ${aiTag}</div>
+          <span class="conf-tag ${confC}">${analysis.confidence} Confidence</span>
+        </div>
+        <div style="margin-bottom:13px">
+          <div class="dbar-row"><span class="dbar-lbl dbuy-t">BUY</span><div class="dbar-track"><div class="dbar-fill dbuy" id="bBuy" style="width:0%"><span class="dbar-ft">${showD.buy}%</span></div></div><span class="dbar-pct dbuy-t">${showD.buy}%</span></div>
+          <div class="dbar-row"><span class="dbar-lbl dhold-t">HOLD</span><div class="dbar-track"><div class="dbar-fill dhold" id="bHold" style="width:0%"><span class="dbar-ft">${showD.hold}%</span></div></div><span class="dbar-pct dhold-t">${showD.hold}%</span></div>
+          <div class="dbar-row"><span class="dbar-lbl dsell-t">SELL</span><div class="dbar-track"><div class="dbar-fill dsell" id="bSell" style="width:0%"><span class="dbar-ft">${showD.sell}%</span></div></div><span class="dbar-pct dsell-t">${showD.sell}%</span></div>
+        </div>
+        <div style="background:rgba(255,165,2,.04);border:1px solid rgba(255,165,2,.15);border-radius:8px;padding:9px;font-size:11px;color:var(--muted2);margin-bottom:9px">⚠️ Probabilities only — not financial advice.</div>
+        <div style="font-size:12px;color:var(--muted2);line-height:1.6">${MOCK_ANALYSIS[ticker]?.probability ? `Signals suggest ${showD.buy>50?'lean bullish':'lean cautious'} positioning for this stock.` : ''}</div>
+      </div>
+    </div>
+
+    ${S.ai==='combined'?`
+    <!-- AI Comparison -->
+    <div class="card">
+      <div class="ch">
+        <div class="ct"><div class="dot" style="background:var(--purple)"></div>Claude vs GPT-4 Comparison</div>
+        <span style="font-family:var(--font-m);font-size:11px;font-weight:700;color:${agreeColor}">Agreement: ${agree}%</span>
+      </div>
+      <div class="cmp-grid">
+        ${miniCmp('Claude','ai-claude',dC,'#ff8400')}
+        ${miniCmp('GPT-4','ai-gpt',dG,'var(--green)')}
+        ${miniCmp('Consensus','ai-con',dCon,'var(--cyan)')}
+      </div>
+      ${agree<80?`<div style="margin-top:11px;background:rgba(255,211,42,.04);border:1px solid rgba(255,211,42,.2);border-radius:8px;padding:9px;font-size:11px;color:rgba(255,211,42,.85)">ℹ️ Models diverge slightly — Claude is ${dC.buy>dG.buy?'more bullish':'more bearish'} than GPT-4 on ${ticker}. Review individual insights before deciding.</div>`:`<div style="margin-top:11px;font-size:11px;color:var(--green)">✓ Both AI models agree on the direction for ${ticker}.</div>`}
+    </div>`:'' }
+
+    <!-- Agent Insights -->
+    <div class="card">
+      <div class="ch"><div class="ct"><div class="dot"></div>Multi-Agent Insights</div></div>
+      <div class="ins-i"><span class="ins-num">A1</span><div><div class="ins-ag">News Agent</div><div class="ins-tx">Sentiment is <strong style="color:${sentColor}">${sentLabel}</strong> for ${ticker}. ${HEADLINES.filter(h=>h.ticker===ticker).length} recent articles processed and clustered into market themes.</div></div></div>
+      <div class="ins-i"><span class="ins-num">A2</span><div><div class="ins-ag">Risk Agent</div><div class="ins-tx">Risk-adjusted score: <strong style="color:${riskColor}">${risk}/100 (${riskLabel})</strong>. Adjusted for <strong style="color:var(--text)">${S.risk}</strong> user profile. Volatility index: ${Math.round(risk*.4)}.</div></div></div>
+      <div class="ins-i"><span class="ins-num">A3</span><div><div class="ins-ag">Ranking Agent</div><div class="ins-tx">${rank?`Watchlist priority <strong style="color:var(--cyan)">#${rank.rank}</strong> — ${rank.reason}`:'Not in current top watchlist ranking.'}</div></div></div>
+      <div class="ins-i"><span class="ins-num">A4</span><div><div class="ins-ag">Decision Engine</div><div class="ins-tx">Combined signal: <strong style="color:var(--green)">BUY ${showD.buy}%</strong> · <strong style="color:var(--orange)">HOLD ${showD.hold}%</strong> · <strong style="color:var(--red)">SELL ${showD.sell}%</strong>. ${analysis.confidence} confidence based on all 4 agent inputs.</div></div></div>
+    </div>
+  `;
+
+  setTimeout(()=>{
+    const gf=document.getElementById('gFill'),bb=document.getElementById('bBuy'),bh=document.getElementById('bHold'),bs=document.getElementById('bSell');
+    if(gf)gf.style.width=risk+'%';
+    if(bb)bb.style.width=showD.buy+'%';
+    if(bh)bh.style.width=showD.hold+'%';
+    if(bs)bs.style.width=showD.sell+'%';
+  },80);
+}
+
+function miniCmp(label,cls,d,color){
+  return `<div class="cmp-col">
+    <div class="cmp-title"><span class="ai-tag ${cls}">${label}</span></div>
+    <div class="cmr"><span class="cml" style="color:var(--green)">B</span><div class="cmt"><div class="cmf" style="width:${d.buy}%;background:rgba(0,230,118,.6)"></div></div><span class="cmpct pos">${d.buy}%</span></div>
+    <div class="cmr"><span class="cml" style="color:var(--orange)">H</span><div class="cmt"><div class="cmf" style="width:${d.hold}%;background:rgba(255,165,2,.6)"></div></div><span class="cmpct" style="color:var(--orange)">${d.hold}%</span></div>
+    <div class="cmr"><span class="cml" style="color:var(--red)">S</span><div class="cmt"><div class="cmf" style="width:${d.sell}%;background:rgba(255,71,87,.6)"></div></div><span class="cmpct neg">${d.sell}%</span></div>
+  </div>`;
+}
+
+// ============================================================
+// LIVE API CALLS
+// ============================================================
+async function runLiveAnalysis(ticker){
+  const sk = STOCKS.find(s=>s.id===ticker);
+  if(!sk) return;
+
+  let livePrice = sk.price;
+  let liveHeadlines = HEADLINES.filter(h=>h.ticker===ticker).map(h=>h.headline);
+
+  // 1. Fetch live price from Alpha Vantage
+  if(S.keys.alpha){
+    try{
+      const r = await fetch(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${ticker}&apikey=${S.keys.alpha}`);
+      const d = await r.json();
+      const q = d['Global Quote'];
+      if(q&&q['05. price']){
+        livePrice = parseFloat(q['05. price']);
+        sk.price = livePrice;
+        sk.change = parseFloat(q['09. change'])||sk.change;
+        sk.pct = parseFloat(q['10. change percent'])||sk.pct;
+      }
+    }catch(e){console.warn('Alpha Vantage error:',e);}
+  }
+
+  // 2. Fetch live headlines from NewsAPI
+  if(S.keys.news){
+    try{
+      const r = await fetch(`https://newsapi.org/v2/everything?q=${encodeURIComponent(sk.name)}&language=en&sortBy=publishedAt&pageSize=5&apiKey=${S.keys.news}`);
+      const d = await r.json();
+      if(d.articles&&d.articles.length){
+        liveHeadlines = d.articles.slice(0,4).map(a=>a.title);
+      }
+    }catch(e){console.warn('NewsAPI error:',e);}
+  }
+
+  // 3. Call Claude (main analysis)
+  if(S.keys.claude){
+    try{
+      const sent = HEADLINES.filter(h=>h.ticker===ticker).map(h=>h.sentiment);
+      const avgSent = sent.length?sent.reduce((a,b)=>a+b,0)/sent.length:0;
+      const baseRisk = RISK_BASE[ticker]||50;
+      const risk = Math.min(Math.round(baseRisk*(RISK_MULT[S.risk]||1)),100);
+
+      const prompt = buildClaudePrompt({
+        stock_name: sk.name, ticker,
+        news_list: liveHeadlines.join('\n'),
+        sentiment_score: avgSent.toFixed(2),
+        trend: sk.pct>0?'uptrend':'downtrend',
+        volume_change: sk.vol>50000000?'above average':'average',
+        risk_score: risk,
+        risk_profile: S.risk,
+        market_mood: 'cautiously optimistic'
+      });
+
+      const resp = await callClaude(prompt);
+      const clean = resp.replace(/```json|```/g,'').trim();
+      const parsed = JSON.parse(clean);
+      renderDecision(ticker, parsed);
+      return;
+    }catch(e){console.warn('Claude live error:',e);}
+  }
+
+  // Fallback to mock if API fails
+  renderDecision(ticker, MOCK_ANALYSIS[ticker]);
+}
+
+function buildClaudePrompt(d){
+  return `You are StockMind AI — a beginner-friendly stock analysis assistant.
+Your job: Explain stocks in simple language for beginners. NEVER guarantee profit. NEVER say "you must buy". Always use probability and confidence.
+
+STOCK DATA:
+Stock Name: ${d.stock_name}
+Ticker: ${d.ticker}
+Latest News Headlines:
+${d.news_list}
+News Sentiment Score: ${d.sentiment_score} (range -1 to +1)
+Technical Trend: ${d.trend}
+Volume Change: ${d.volume_change}
+AI Risk Score: ${d.risk_score} (0-100)
+User Profile: ${d.risk_profile}
+Market Mood: ${d.market_mood}
+
+OUTPUT RULES:
+- beginner_summary: 5-6 simple sentences assuming user is new to investing
+- growth_signals: exactly 3 positive signals based on news/sentiment/trend
+- risks: exactly 3 risks in simple language
+- probability: buy+hold+sell must total exactly 100
+- confidence: "Low", "Medium", or "High"
+- beginner_tag: "Beginner Friendly" if risk<35, "Moderate Risk" if 35-65, "High Risk Stock" if >65
+- news_explained: 1 sentence explaining what the most important headline means for the stock
+- market_story: 1-2 sentences: "Right now the market is focusing on ____ which may affect ____."
+
+Return ONLY valid JSON, no markdown, no explanation:
+{"beginner_summary":"","growth_signals":["","",""],"risks":["","",""],"probability":{"buy":0,"hold":0,"sell":0},"confidence":"","beginner_tag":"","news_explained":"","market_story":""}`;
+}
+
+async function callClaude(prompt){
+  const r = await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':S.keys.claude,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({model:'claude-opus-4-6',max_tokens:1200,messages:[{role:'user',content:prompt}]})
+  });
+  if(!r.ok)throw new Error('Claude API '+r.status);
+  const d=await r.json();
+  return d.content[0]?.text||'';
+}
+
+// ============================================================
+// UI CONTROLS
+// ============================================================
+function goPanel(id, el){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.nav-i').forEach(n=>n.classList.remove('on'));
+  document.getElementById('panel-'+id).classList.add('on');
+  if(el)el.classList.add('on');
+}
+
+function toggleMode(){
+  S.mode = S.mode==='demo'?'live':'demo';
+  const badge=document.getElementById('modeBadge'), tog=document.getElementById('liveToggle');
+  const mt=document.getElementById('modeTitle'), ms=document.getElementById('modeSub');
+  if(S.mode==='live'){
+    badge.className='badge badge-live'; badge.textContent='● LIVE';
+    if(tog)tog.checked=true;
+    if(mt)mt.textContent='Live Mode';
+    if(ms)ms.textContent='Calling real Claude + Alpha Vantage APIs';
+  } else {
+    badge.className='badge badge-demo'; badge.textContent='● DEMO';
+    if(tog)tog.checked=false;
+    if(mt)mt.textContent='Demo Mode';
+    if(ms)ms.textContent='Simulated data · no API key needed';
+  }
+}
+
+function pickRisk(el){
+  document.querySelectorAll('#riskChoices .ch-i').forEach(i=>{i.classList.remove('sel');i.querySelector('.ch-ck').textContent='';});
+  el.classList.add('sel'); el.querySelector('.ch-ck').textContent='✓';
+  S.risk=el.dataset.v;
+  if(S.stock)renderDecision(S.stock,MOCK_ANALYSIS[S.stock]);
+}
+
+function pickAI(el){
+  document.querySelectorAll('#aiChoices .ch-i').forEach(i=>{i.classList.remove('sel');i.querySelector('.ch-ck').textContent='';});
+  el.classList.add('sel'); el.querySelector('.ch-ck').textContent='✓';
+  S.ai=el.dataset.v;
+  if(S.stock)renderDecision(S.stock,MOCK_ANALYSIS[S.stock]);
+}
+
+function refreshAll(){
+  const b=document.getElementById('refreshBtn'); b.classList.add('go');
+  progress();
+  setTimeout(()=>{
+    renderThemes(); renderHeadlines(); renderRanks(); renderSidebar();
+    if(S.stock)renderDecision(S.stock,MOCK_ANALYSIS[S.stock]);
+    b.classList.remove('go');
+  },1200);
+}
+
+function progress(){
+  const p=document.getElementById('pb');
+  p.style.width='0%'; p.style.transition='none';
+  setTimeout(()=>{p.style.transition='width .9s ease'; p.style.width='80%';},50);
+  setTimeout(()=>{p.style.width='100%'; setTimeout(()=>{p.style.width='0%';p.style.transition='none';},400);},1300);
+}
+
+function openModal(){document.getElementById('apiModal').classList.add('show');}
+function closeModal(){document.getElementById('apiModal').classList.remove('show');}
+
+function saveKeysModal(){
+  S.keys.claude=document.getElementById('mClaudeKey').value;
+  S.keys.openai=document.getElementById('mOpenaiKey').value;
+  S.keys.alpha=document.getElementById('mAlphaKey').value;
+  S.keys.news=document.getElementById('mNewsKey').value;
+  syncSettingsInputs();
+  closeModal();
+  if(S.keys.claude||S.keys.openai){S.mode='live';toggleMode();}
+}
+
+function saveKeysSettings(){
+  S.keys.claude=document.getElementById('sClaudeKey').value;
+  S.keys.openai=document.getElementById('sOpenaiKey').value;
+  S.keys.alpha=document.getElementById('sAlphaKey').value;
+  S.keys.news=document.getElementById('sNewsKey').value;
+  if(S.keys.claude||S.keys.openai){S.mode='live';toggleMode();}
+  const b=event.target; b.textContent='✓ Saved!'; setTimeout(()=>b.textContent='💾 Save API Keys',2000);
+}
+
+function syncSettingsInputs(){
+  const map=[['sClaudeKey','claude'],['sOpenaiKey','openai'],['sAlphaKey','alpha'],['sNewsKey','news']];
+  map.forEach(([id,k])=>{const el=document.getElementById(id);if(el&&S.keys[k])el.value=S.keys[k];});
+}
+
+document.getElementById('apiModal').addEventListener('click',function(e){if(e.target===this)closeModal();});
+
+// ============================================================
+// BOOT
+// ============================================================
+init();
+</script>
+</body>
+</html>
